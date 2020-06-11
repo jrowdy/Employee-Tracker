@@ -27,13 +27,13 @@ function start() {
       message: "What would you like to do?",
       choices: [
         "View All Employees",
-        "View All Employees by Department",
-        "View All Employees by Roles",
+        "View Departments",
+        "View Roles",
+        "Update Employee",
         "Add Employee",
         "Add Department",
         "Add Role",
-        "Update Employee Roles",
-        "EXIT"
+        "Back to Main Menu"
       ]
     })
     .then(function (answer) {
@@ -41,11 +41,14 @@ function start() {
         case "View All Employees":
           viewEmp();
           break;
-        case "View All Employees by Department":
-          viewBydept();
+        case "Update Employee":
+          updateEmp();
           break;
-        case "View All Employees by Roles":
-          viewByroles();
+        case "View Departments":
+          viewDept();
+          break;
+        case "View Roles":
+          viewRole();
           break;
         case "Add Employee":
           addEmp();
@@ -59,12 +62,15 @@ function start() {
         case "Update Employee Role":
           updateRole();
           break;
+        case "Back to Main Menu":
+          start();
+          break;
         }
       });
   }
   
 
-function viewBydept() {
+function viewDept() {
   connection.query("SELECT * FROM department", (err, results) => {
     if (err) throw err;
     inquirer
@@ -98,33 +104,11 @@ function viewBydept() {
           start();
       });
     }
-  //     .then(function (data){
-  //       let chosenDept;
-  //       for (let i = 0; i < results.length; i++) {
-  //         if (results[i].name === data.name) {
-  //           chosenDept = results[i];
-  //   }
-  //       const query = connection.query(
-  //         `select * from employee JOIN role on employee.role_id = role.id JOIN department on role.department_id = department.id where department.name = ?`,
-    
-  //       (err, res) => {
-  //       if (err) throw err;
-  //       console.table(res);
-  //       start();
-  //     })
-  // }
-  // })
 
 
-// function viewByroles() {
-// }
 
 
-// function updateRole() {
-  
-// }
 
-// function to handle adding new employees.
 
 function addEmp() {
   connection.query("SELECT * FROM role", (err, results) => {
@@ -181,6 +165,26 @@ function addEmp() {
 // / function to view all employees.
 function viewEmp() {
   connection.query("SELECT * FROM employee", (err, results) => {
+    if (err) throw err;
+
+   console.table(results);
+   start();
+})
+}
+
+// / function to view all departments.
+function viewDept() {
+  connection.query("SELECT * FROM department", (err, results) => {
+    if (err) throw err;
+
+   console.table(results);
+   start();
+})
+}
+
+// / function to view all roles.
+function viewRole() {
+  connection.query("SELECT * FROM role", (err, results) => {
     if (err) throw err;
 
    console.table(results);
@@ -261,6 +265,75 @@ function addDept() {
         )
       })
   }
+
+  // function to update employee roles.
+function updateEmp() {
+    connection.query("SELECT * FROM employee", (err, results) => {
+      inquirer
+        .prompt([{
+          name: "employee",
+          type: "list",
+          message: "Which employee would you like to update?",
+          choices: () => {
+            const empArray = [];
+            for (let i = 0; i < results.length; i++) {
+              empArray.push(`${results[i].first_name} ${results[i].last_name}`)
+            }
+            return empArray
+          }
+        }])
+        .then(function (data) {
+          let chosenEmployee;
+          for (let i = 0; i < results.length; i++) {
+            if (`${results[i].first_name} ${results[i].last_name}` === data.employee) {
+              chosenEmployee = results[i]
+            }
+          }
+          connection.query("SELECT * FROM role",
+            (err, results) => {
+              if (err) throw err;
+  
+              inquirer
+                .prompt([{
+                    name: "role",
+                    type: "list",
+                    message: "What is the employee's new role?",
+                    choices: () => {
+                      const roleArray = [];
+                      for (let i = 0; i < results.length; i++) {
+                        roleArray.push(results[i].title)
+                      }
+                      return roleArray
+                    }
+                  },
+  
+                ]).then(function (data) {
+                  let chosenRole;
+                  for (let i = 0; i < results.length; i++) {
+                    if (results[i].title === data.role) {
+                      chosenRole = results[i]
+                    }
+                  }
+  
+                  const query = connection.query("UPDATE employee SET ? WHERE ?",
+                    [{
+                        role_id: chosenRole.id
+                      },
+                      {
+                        id: chosenEmployee.id
+                      }
+                    ], (err) => {
+                      if (err) throw err;
+                      console.log("------Employee Updated-------")
+                      start()
+                    })
+                  })
+                })
+              })
+            })
+          }
+
+  
 
 
 
